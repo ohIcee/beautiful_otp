@@ -48,11 +48,6 @@ class _BottomNavState extends State<BottomNav> {
               scrollDirection: Axis.horizontal,
               reverse: true,
               children: [
-                _buildButton('', CupertinoIcons.delete, () async {
-                  Provider.of<AuthEntriesProvider>(context, listen: false)
-                      .removeAllEntries();
-                }),
-                const SizedBox(width: 10.0),
                 _buildButton('Add Item', CupertinoIcons.add, _onAddItemButton),
                 const SizedBox(width: 10.0),
                 _buildButton(

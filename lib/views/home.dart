@@ -7,6 +7,8 @@ import 'package:beautiful_otp/components/bottom_nav.dart';
 import 'package:beautiful_otp/models/auth_entry.dart';
 import 'package:beautiful_otp/provider/auth_entries_provider.dart';
 import 'package:beautiful_otp/provider/biometric_provider.dart';
+import 'package:beautiful_otp/views/qr_scanner.dart';
+import 'package:beautiful_otp/views/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -207,18 +209,45 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             child: Consumer<AuthEntriesProvider>(
               builder: (context, AuthEntriesProvider data, child) {
-                return ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: data.getEntries.length,
-                  itemBuilder: (context, index) {
-                    return _buildAuthEntry(data.getEntries[index]);
-                  },
-                );
+                return data.getEntries.isEmpty
+                    ? _buildNoItems()
+                    : ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: data.getEntries.length,
+                        itemBuilder: (context, index) {
+                          return _buildAuthEntry(data.getEntries[index]);
+                        },
+                      );
               },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNoItems() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text(
+          'No Items!',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 30.0),
+        CupertinoButton.filled(
+          child: const Text('Scan QR Code'),
+          onPressed: () => Navigator.push(context,
+              CupertinoPageRoute(builder: (context) => const QrScanner())),
+        ),
+        CupertinoButton(
+          child: const Text('Import from File'),
+          onPressed: () => Navigator.push(context,
+              CupertinoPageRoute(builder: (context) => const SettingsPage())),
+        ),
+      ],
     );
   }
 
@@ -339,7 +368,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Text(
-                      entry.name!,
+                      entry.customName!,
                       style: TextStyle(
                         color: CupertinoTheme.of(context)
                             .textTheme
