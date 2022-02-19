@@ -64,12 +64,15 @@ PODS:
     - Flutter
   - PromisesObjC (2.0.0)
   - Protobuf (3.19.4)
+  - shared_preferences_ios (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - app_settings (from `.symlinks/plugins/app_settings/ios`)
   - Flutter (from `Flutter`)
   - flutter_qr_bar_scanner (from `.symlinks/plugins/flutter_qr_bar_scanner/ios`)
   - native_device_orientation (from `.symlinks/plugins/native_device_orientation/ios`)
+  - shared_preferences_ios (from `.symlinks/plugins/shared_preferences_ios/ios`)
 
 SPEC REPOS:
   trunk:
@@ -96,6 +99,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_qr_bar_scanner/ios"
   native_device_orientation:
     :path: ".symlinks/plugins/native_device_orientation/ios"
+  shared_preferences_ios:
+    :path: ".symlinks/plugins/shared_preferences_ios/ios"
 
 SPEC CHECKSUMS:
   app_settings: d103828c9f5d515c4df9ee754dabd443f7cedcf3
@@ -115,6 +120,7 @@ SPEC CHECKSUMS:
   native_device_orientation: 3b4cfc9565a7b879cc4fde282b3e27745e852d0d
   PromisesObjC: 68159ce6952d93e17b2dfe273b8c40907db5ba58
   Protobuf: 235750e4696ff59fb07d949a9dbbc92b3c0700fe
+  shared_preferences_ios: 548a61f8053b9b8a49ac19c1ffbc8b92c50d68ad
 
 PODFILE CHECKSUM: 835453a938090039e66f3d4830614e097ff0d1fb
 

@@ -14,7 +14,7 @@ class QrScanner extends StatefulWidget {
 }
 
 class _QrScannerState extends State<QrScanner> {
-  String? _qrInfo = null;
+  String? _qrInfo;
   bool _camState = false;
 
   final TextEditingController _nameController = TextEditingController();
@@ -31,6 +31,15 @@ class _QrScannerState extends State<QrScanner> {
     setState(() {
       _camState = false;
       _qrInfo = code;
+
+      AuthEntry entry = AuthEntry.fromGauthString(_qrInfo!, false);
+
+      _nameController.text = entry.name!;
+      _secretController.text = entry.secret!;
+      _issuerController.text = entry.issuer!;
+      _digitsController.text = entry.digits?.toString() ?? "6";
+      _algorithmController.text = entry.algorithm?.name ?? "SHA1";
+      _periodController.text = entry.period?.toString() ?? "30";
     });
   }
 
@@ -101,10 +110,10 @@ class _QrScannerState extends State<QrScanner> {
             ),
             child: CupertinoButton(
               onPressed: () => Navigator.pop(context),
-              child: Icon(CupertinoIcons.back),
+              child: const Icon(CupertinoIcons.back),
             ),
           ),
-          SizedBox(width: 20.0),
+          const SizedBox(width: 20.0),
           Container(
             decoration: BoxDecoration(
               color: CupertinoColors.white,
@@ -141,14 +150,7 @@ class _QrScannerState extends State<QrScanner> {
       return const Text('Nothing... This shouldn\'t ever be seen :o');
     }
 
-    print(_qrInfo!);
-    AuthEntry entry = AuthEntry.fromGauthString(_qrInfo!, false);
-    _nameController.text = entry.name!;
-    _secretController.text = entry.secret!;
-    _issuerController.text = entry.issuer!;
-    _digitsController.text = entry.digits?.toString() ?? "6";
-    _algorithmController.text = entry.algorithm?.name ?? "SHA1";
-    _periodController.text = entry.period?.toString() ?? "30";
+
 
     return Padding(
       padding: EdgeInsets.only(
@@ -170,8 +172,8 @@ class _QrScannerState extends State<QrScanner> {
                 Icon(showAdvancedOptions
                     ? CupertinoIcons.chevron_down
                     : CupertinoIcons.chevron_up),
-                SizedBox(width: 30.0),
-                Text('Advanced Options'),
+                const SizedBox(width: 30.0),
+                const Text('Advanced Options'),
               ],
             ),
             onPressed: () {
@@ -196,7 +198,7 @@ class _QrScannerState extends State<QrScanner> {
                   )
                 : Container(),
           ),
-          SizedBox(height: 50.0),
+          const SizedBox(height: 50.0),
           Padding(
             padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewPadding.bottom + 10.0),
@@ -205,7 +207,20 @@ class _QrScannerState extends State<QrScanner> {
               children: [
                 CupertinoButton.filled(
                   child: const Text('Confirm'),
-                  onPressed: () => Navigator.pop(context, entry),
+                  onPressed: () {
+                    AuthEntry entry = AuthEntry(
+                      name: _nameController.text,
+                      customName: '',
+                      secret: _secretController.text,
+                      issuer: _issuerController.text,
+                      digits: int.parse(_digitsController.text),
+                      algorithm: AuthEntry.nameToAlgorithm(_algorithmController.text),
+                      period: int.parse(_periodController.text),
+                    );
+
+                    Navigator.pop(context, entry);
+                  },
+                  // onPressed: () => Navigator.pop(context, entry),
                 ),
                 CupertinoButton(
                   onPressed: () {
@@ -224,7 +239,7 @@ class _QrScannerState extends State<QrScanner> {
     );
   }
 
-  Widget _buildTextField(String labelName, TextEditingController controller,
+  Widget _buildTextField(String labelName, TextEditingController textController,
       {bool obscureText = false,
       TextInputType keyboardType = TextInputType.text}) {
     return Padding(
@@ -243,7 +258,7 @@ class _QrScannerState extends State<QrScanner> {
             children: [
               Expanded(
                 child: CupertinoTextField(
-                  controller: controller,
+                  controller: textController,
                   obscureText: obscureText ? secretTextObscured : false,
                   keyboardType: keyboardType,
                   enabled: !(obscureText && secretTextObscured),

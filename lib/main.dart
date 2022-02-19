@@ -1,9 +1,14 @@
+import 'package:beautiful_otp/provider/auth_entries_provider.dart';
+import 'package:beautiful_otp/services/storage_service.dart';
 import 'package:beautiful_otp/views/home.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
-  await WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await StorageService.init();
 
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
@@ -17,8 +22,8 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return const CupertinoApp(
-      theme: CupertinoThemeData(
+    return CupertinoApp(
+      theme: const CupertinoThemeData(
         brightness: Brightness.light,
         primaryColor: Color(0xFFE44F5C),
         textTheme: CupertinoTextThemeData(
@@ -27,7 +32,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: HomePage(),
+      home: ChangeNotifierProvider<AuthEntriesProvider>(
+        create: (context) => AuthEntriesProvider(),
+        child: const HomePage(),
+      ),
     );
   }
 }

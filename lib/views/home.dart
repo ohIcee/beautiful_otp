@@ -1,12 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:animated_fractionally_sized_box/animated_fractionally_sized_box.dart';
 import 'package:beautiful_otp/components/bottom_nav.dart';
 import 'package:beautiful_otp/models/auth_entry.dart';
+import 'package:beautiful_otp/provider/auth_entries_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:collection/collection.dart';
+import 'package:provider/provider.dart';
+
+import '../services/storage_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -16,20 +21,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // List<String> aegisBackupCodes = [
-  //   "otpauth://totp/Discord%3Aicevx1%40gmail.com?period=30&digits=6&algorithm=SHA1&secret=ZO33BBMP55JY3IKK&issuer=Discord",
-  //   "otpauth://totp/FaceIt%3AIceeCold?period=30&digits=6&algorithm=SHA1&secret=BN45VYXPRT4HCIQZ&issuer=FaceIt",
-  //   "otpauth://totp/EFT%3AbyIcee?period=30&digits=6&algorithm=SHA1&secret=C2JMA6GKOY5T2GYV2DFMFS7EGWDJBYQ3&issuer=EFT",
-  //   "otpauth://totp/Bitfinex%3ABitfinex-9-2-2020?period=30&digits=6&algorithm=SHA1&secret=RJNXVP6Y4SNQNAGY&issuer=Bitfinex",
-  //   "otpauth://totp/EFT%3AohIcee?period=30&digits=6&algorithm=SHA1&secret=NGD7X6A3KAKDZMPFTISQUTMAHATA6EAK&issuer=EFT",
-  //   "otpauth://totp/Argentas%3Aicevx1%40gmail.com?period=30&digits=6&algorithm=SHA1&secret=2CVJXXSV47D3RYQH&issuer=Argentas",
-  //   "otpauth://totp/Celsius%3ACelsius?period=30&digits=6&algorithm=SHA1&secret=GJFXWKCBLIXGY32PKB3SC3KWKAXCUZDE&issuer=Celsius",
-  //   "otpauth://totp/Nexo%3Aicevx1%40gmail.com?period=30&digits=6&algorithm=SHA1&secret=YWP5YPFETQOMUE7E&issuer=Nexo",
-  //   "otpauth://totp/CakeDEFI%3Aicevx1%40gmail.com?period=30&digits=6&algorithm=SHA1&secret=OJZGK6TNGV2W4ZRQ&issuer=CakeDEFI",
-  // ];
-
-  List<AuthEntry> authEntries = [];
-
   Map<AuthEntry, String> previousOtpCodes = {};
   Map<AuthEntry, String> otpCodes = {};
 
@@ -42,14 +33,23 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    // for (var backupCode in aegisBackupCodes) {
-    //   authEntries.add(AuthEntry.fromGauthString(backupCode, true));
-    // }
+    List<String>? savedEntries = StorageService.getAuthEntries();
+
+    if (savedEntries != null) {
+      List<AuthEntry> entries = [];
+      for (var entryJson in savedEntries) {
+        AuthEntry entry = AuthEntry.fromJson(jsonDecode(entryJson));
+        entry.generateTOTP();
+        entries.add(entry);
+      }
+      Provider.of<AuthEntriesProvider>(context, listen: false)
+          .setEntries(entries);
+    }
 
     refreshTokens();
 
     timerTimeLeft =
-        (30 - (DateTime.now().millisecondsSinceEpoch / 1000) % 30).round() - 2;
+        (30 - (DateTime.now().millisecondsSinceEpoch / 1000) % 30).round();
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
       refreshTokens();
@@ -62,8 +62,7 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           timerTimeLeft =
               (30 - (DateTime.now().millisecondsSinceEpoch / 1000) % 30)
-                      .round() -
-                  2;
+                  .round();
         });
       }
     });
@@ -73,13 +72,16 @@ class _HomePageState extends State<HomePage> {
     previousOtpCodes = otpCodes;
     otpCodes = {};
 
-    for (var entry in authEntries) {
+    final entries =
+        Provider.of<AuthEntriesProvider>(context, listen: false).getEntries;
+    for (var entry in entries) {
       otpCodes[entry] = entry.totp!.now();
     }
 
     if (!const DeepCollectionEquality().equals(previousOtpCodes, otpCodes)) {
       setState(() {
-        timerTimeLeft = 30;
+        timerTimeLeft =
+            (30 - (DateTime.now().millisecondsSinceEpoch / 1000) % 30).round();
       });
     }
 
@@ -155,11 +157,15 @@ class _HomePageState extends State<HomePage> {
           _buildRefreshTimer(),
           const SizedBox(height: 15.0),
           Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.zero,
-              itemCount: authEntries.length,
-              itemBuilder: (context, index) {
-                return _buildAuthEntry(authEntries[index]);
+            child: Consumer<AuthEntriesProvider>(
+              builder: (context, AuthEntriesProvider data, child) {
+                return ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: data.getEntries.length,
+                  itemBuilder: (context, index) {
+                    return _buildAuthEntry(data.getEntries[index]);
+                  },
+                );
               },
             ),
           ),
@@ -237,7 +243,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         onDismissed: (DismissDirection direction) {
-          setState(() => authEntries.remove(entry));
+          Provider.of<AuthEntriesProvider>(context, listen: false)
+              .removeEntry(entry);
         },
         confirmDismiss: (DismissDirection direction) async {
           return await showCupertinoDialog(
