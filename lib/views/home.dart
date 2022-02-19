@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:animated_fractionally_sized_box/animated_fractionally_sized_box.dart';
 import 'package:beautiful_otp/components/bottom_nav.dart';
 import 'package:beautiful_otp/models/auth_entry.dart';
 import 'package:beautiful_otp/provider/auth_entries_provider.dart';
+import 'package:beautiful_otp/provider/biometric_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -29,12 +31,11 @@ class _HomePageState extends State<HomePage> {
   double _snackbarHeight = 0.0;
   final double _expandedSnackbarHeight = 90.0;
 
-  @override
-  void initState() {
-    super.initState();
+  bool biometricsEnabled = false;
+  bool authenticated = false;
 
+  void loadSavedEntries() {
     List<String>? savedEntries = StorageService.getAuthEntries();
-
     if (savedEntries != null) {
       List<AuthEntry> entries = [];
       for (var entryJson in savedEntries) {
@@ -47,6 +48,51 @@ class _HomePageState extends State<HomePage> {
     }
 
     refreshTokens();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    Provider.of<BiometricProvider>(context, listen: false)
+        .localAuth
+        .canCheckBiometrics
+        .then((available) {
+      Provider.of<BiometricProvider>(context, listen: false)
+          .setBiometricsAvailable(available);
+
+      if (available) {
+        StorageService.getBiometricEnabled().then((biometricEnabled) {
+          print("Biometric enabled: $biometricEnabled");
+
+          biometricsEnabled = biometricsEnabled;
+          if (biometricEnabled != null && biometricEnabled) {
+            Provider.of<BiometricProvider>(context, listen: false)
+                .setBiometricEnabled(biometricEnabled, saveToStorage: false);
+
+            Provider.of<BiometricProvider>(context, listen: false)
+                .localAuth
+                .authenticate(
+                  localizedReason: 'Authenticate to access app',
+                  biometricOnly: true,
+                )
+                .then((value) {
+              if (!value) {
+                if (kDebugMode) {
+                  print('Failed to authenticate!');
+                }
+                exit(0);
+              }
+              loadSavedEntries();
+            });
+          } else {
+            loadSavedEntries();
+          }
+        });
+      } else {
+        loadSavedEntries();
+      }
+    });
 
     timerTimeLeft =
         (30 - (DateTime.now().millisecondsSinceEpoch / 1000) % 30).round();
@@ -75,6 +121,8 @@ class _HomePageState extends State<HomePage> {
     final entries =
         Provider.of<AuthEntriesProvider>(context, listen: false).getEntries;
     for (var entry in entries) {
+      if (entry.totp == null) continue;
+
       otpCodes[entry] = entry.totp!.now();
     }
 
@@ -125,8 +173,8 @@ class _HomePageState extends State<HomePage> {
         curve: Curves.easeOutCirc,
         width: 50.0,
         height: _snackbarHeight,
-        decoration: const BoxDecoration(
-          color: CupertinoColors.destructiveRed,
+        decoration: BoxDecoration(
+          color: CupertinoTheme.of(context).primaryColor,
         ),
         child: const Align(
           alignment: Alignment.bottomCenter,

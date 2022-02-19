@@ -27,6 +27,12 @@ class AuthEntriesProvider extends ChangeNotifier {
     }
   }
 
+  void removeAllEntries() {
+    StorageService.setAuthEntries([]);
+    _authEntries.clear();
+    notifyListeners();
+  }
+
   void removeEntry(AuthEntry entry) {
     _authEntries.remove(entry);
     notifyListeners();

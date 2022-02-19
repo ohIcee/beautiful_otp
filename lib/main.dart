@@ -1,4 +1,5 @@
 import 'package:beautiful_otp/provider/auth_entries_provider.dart';
+import 'package:beautiful_otp/provider/biometric_provider.dart';
 import 'package:beautiful_otp/services/storage_service.dart';
 import 'package:beautiful_otp/views/home.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,6 +10,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await StorageService.init();
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.light,
+  ));
 
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
@@ -22,19 +28,24 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
-      theme: const CupertinoThemeData(
-        brightness: Brightness.light,
-        primaryColor: Color(0xFFE44F5C),
-        textTheme: CupertinoTextThemeData(
-          textStyle: TextStyle(
-            color: Color(0xFF44181C),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthEntriesProvider>(
+            create: (_) => AuthEntriesProvider()),
+        ChangeNotifierProvider<BiometricProvider>(
+            create: (_) => BiometricProvider()),
+      ],
+      child: const CupertinoApp(
+        theme: CupertinoThemeData(
+          brightness: Brightness.light,
+          primaryColor: Color(0xFFE44F5C),
+          textTheme: CupertinoTextThemeData(
+            textStyle: TextStyle(
+              color: Color(0xFF44181C),
+            ),
           ),
         ),
-      ),
-      home: ChangeNotifierProvider<AuthEntriesProvider>(
-        create: (context) => AuthEntriesProvider(),
-        child: const HomePage(),
+        home: HomePage(),
       ),
     );
   }

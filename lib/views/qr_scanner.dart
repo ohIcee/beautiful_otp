@@ -32,21 +32,37 @@ class _QrScannerState extends State<QrScanner> {
       _camState = false;
       _qrInfo = code;
 
-      AuthEntry entry = AuthEntry.fromGauthString(_qrInfo!, false);
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.light,
+      ));
 
-      _nameController.text = entry.name!;
-      _secretController.text = entry.secret!;
-      _issuerController.text = entry.issuer!;
-      _digitsController.text = entry.digits?.toString() ?? "6";
-      _algorithmController.text = entry.algorithm?.name ?? "SHA1";
-      _periodController.text = entry.period?.toString() ?? "30";
+      if (_qrInfo != 'manual') {
+        AuthEntry entry = AuthEntry.fromGauthString(_qrInfo!, false);
+        _nameController.text = entry.name!;
+        _secretController.text = entry.secret!;
+        _issuerController.text = entry.issuer!;
+        _digitsController.text = entry.digits?.toString() ?? "6";
+        _algorithmController.text = entry.algorithm?.name ?? "SHA1";
+        _periodController.text = entry.period?.toString() ?? "30";
+      } else {
+        _digitsController.text = "6";
+        _algorithmController.text = "SHA1";
+        _periodController.text = "30";
+      }
     });
   }
 
   _scanCode() {
     setState(() {
       _camState = true;
+      _qrInfo = null;
     });
+
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.dark,
+    ));
   }
 
   @override
@@ -102,6 +118,7 @@ class _QrScannerState extends State<QrScanner> {
       padding: EdgeInsets.only(
           top: MediaQuery.of(context).viewPadding.top + 10, left: 40.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             decoration: BoxDecoration(
@@ -119,26 +136,20 @@ class _QrScannerState extends State<QrScanner> {
               color: CupertinoColors.white,
               borderRadius: BorderRadius.circular(10.0),
             ),
-            child: Row(
-              children: [
-                CupertinoButton(
-                  onPressed: () => Navigator.pop(
-                    context,
-                    AuthEntry(
-                        name: 'testname',
-                        algorithm: OTPAlgorithm.SHA1,
-                        customName: '',
-                        digits: 6,
-                        issuer: 'Amazon',
-                        period: 30,
-                        secret: 'testsecret'),
-                  ),
-                  child: const Icon(CupertinoIcons.ant_fill),
-                ),
-                const Text('Debug QR Code'),
-                const SizedBox(width: 20.0),
-              ],
-            ),
+            child: _qrInfo == null
+                ? CupertinoButton(
+                    onPressed: () {
+                      _qrCallback('manual');
+                    },
+                    child: Row(
+                      children: const [
+                        Icon(CupertinoIcons.keyboard),
+                        SizedBox(width: 15.0),
+                        Text('Enter manually'),
+                      ],
+                    ),
+                  )
+                : Container(),
           ),
         ],
       ),
@@ -149,8 +160,6 @@ class _QrScannerState extends State<QrScanner> {
     if (_qrInfo == null) {
       return const Text('Nothing... This shouldn\'t ever be seen :o');
     }
-
-
 
     return Padding(
       padding: EdgeInsets.only(
@@ -165,14 +174,16 @@ class _QrScannerState extends State<QrScanner> {
           _buildTextField('Name', _nameController),
           _buildTextField('Issuer', _issuerController),
           _buildTextField('Secret', _secretController, obscureText: true),
-          const SizedBox(height: 30.0),
           CupertinoButton(
             child: Row(
               children: [
-                Icon(showAdvancedOptions
-                    ? CupertinoIcons.chevron_down
-                    : CupertinoIcons.chevron_up),
-                const SizedBox(width: 30.0),
+                Icon(
+                  showAdvancedOptions
+                      ? CupertinoIcons.chevron_down
+                      : CupertinoIcons.chevron_up,
+                  size: 20.0,
+                ),
+                const SizedBox(width: 20.0),
                 const Text('Advanced Options'),
               ],
             ),
@@ -208,14 +219,25 @@ class _QrScannerState extends State<QrScanner> {
                 CupertinoButton.filled(
                   child: const Text('Confirm'),
                   onPressed: () {
+                    if (_nameController.text.isEmpty ||
+                        _secretController.text.isEmpty ||
+                        _issuerController.text.isEmpty) return;
+
                     AuthEntry entry = AuthEntry(
                       name: _nameController.text,
                       customName: '',
                       secret: _secretController.text,
                       issuer: _issuerController.text,
-                      digits: int.parse(_digitsController.text),
-                      algorithm: AuthEntry.nameToAlgorithm(_algorithmController.text),
-                      period: int.parse(_periodController.text),
+                      digits: _digitsController.text.isEmpty
+                          ? 6
+                          : int.parse(_digitsController.text),
+                      algorithm: _algorithmController.text.isEmpty
+                          ? OTPAlgorithm.SHA1
+                          : AuthEntry.nameToAlgorithm(
+                              _algorithmController.text),
+                      period: _periodController.text.isEmpty
+                          ? 30
+                          : int.parse(_periodController.text),
                     );
 
                     Navigator.pop(context, entry);
@@ -224,10 +246,7 @@ class _QrScannerState extends State<QrScanner> {
                 ),
                 CupertinoButton(
                   onPressed: () {
-                    setState(() {
-                      _qrInfo = null;
-                      _camState = true;
-                    });
+                    _scanCode();
                   },
                   child: const Text('Scan Again'),
                 ),

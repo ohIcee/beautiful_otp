@@ -45,5 +45,11 @@
 	<false/>
 	<key>NSCameraUsageDescription</key>
     <string>Grant camera access to scan QR codes</string>
+    <key>UISupportsDocumentBrowser</key>
+    <true/>
+    <key>NSDocumentDirectory</key>
+    <true/>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Allow Authentication via biometrics</string>
 </dict>
 </plist>
