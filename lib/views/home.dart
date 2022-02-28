@@ -56,44 +56,31 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    Provider.of<BiometricProvider>(context, listen: false)
-        .localAuth
-        .canCheckBiometrics
-        .then((available) {
-      Provider.of<BiometricProvider>(context, listen: false)
-          .setBiometricsAvailable(available);
+    BiometricProvider biometricProvider =
+        Provider.of<BiometricProvider>(context, listen: false);
 
-      if (available) {
-        StorageService.getBiometricEnabled().then((biometricEnabled) {
-          print("Biometric enabled: $biometricEnabled");
+    biometricProvider.localAuth.canCheckBiometrics.then((available) async {
+      biometricProvider.setBiometricsAvailable(available);
 
-          biometricsEnabled = biometricsEnabled;
-          if (biometricEnabled != null && biometricEnabled) {
-            Provider.of<BiometricProvider>(context, listen: false)
-                .setBiometricEnabled(biometricEnabled, saveToStorage: false);
+      if (!available) return;
 
-            Provider.of<BiometricProvider>(context, listen: false)
-                .localAuth
-                .authenticate(
-                  localizedReason: 'Authenticate to access app',
-                  biometricOnly: true,
-                )
-                .then((value) {
-              if (!value) {
-                if (kDebugMode) {
-                  print('Failed to authenticate!');
-                }
-                exit(0);
-              }
-              loadSavedEntries();
-            });
-          } else {
-            loadSavedEntries();
-          }
-        });
-      } else {
-        loadSavedEntries();
+      biometricsEnabled = await StorageService.getBiometricEnabled() ?? false;
+      if (!biometricsEnabled) return;
+
+      biometricProvider.setBiometricEnabled(biometricsEnabled,
+          saveToStorage: false);
+
+      bool response = await biometricProvider.localAuth.authenticate(
+          localizedReason: 'Authenticate to access app', biometricOnly: true);
+
+      if (!response) {
+        if (kDebugMode) {
+          print('Failed to authenticate!');
+        }
+        exit(0);
       }
+
+      loadSavedEntries();
     });
 
     timerTimeLeft =
@@ -368,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Text(
-                      entry.customName!,
+                      entry.name == null ? entry.customName! : entry.name!,
                       style: TextStyle(
                         color: CupertinoTheme.of(context)
                             .textTheme

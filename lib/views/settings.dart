@@ -247,7 +247,7 @@ class _SettingsPageState extends State<SettingsPage> {
         context: context,
         builder: (context) => CupertinoAlertDialog(
           title: const Text('Warning'),
-          content: const Text('The Aegis backup file has to be unencrypted!'),
+          content: const Text('The Aegis backup file has to be unencrypted and exported as txt!'),
           actions: [
             CupertinoDialogAction(
               child: const Text('Understood'),
